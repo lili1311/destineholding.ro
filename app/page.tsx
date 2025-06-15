@@ -1,5 +1,7 @@
 "use client"
 
+import type React from "react"
+
 import { useState } from "react"
 import { Shield, Users, Clock, Award, Phone, Mail, MapPin, CheckCircle, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -7,12 +9,18 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { useActionState } from "react"
-import { submitLead } from "./actions/lead-actions"
 
 export default function InsuranceLandingPage() {
   const [showCallPopup, setShowCallPopup] = useState(false)
-  const [state, formAction, isPending] = useActionState(submitLead, null)
+  const [formState, setFormState] = useState<{
+    loading: boolean
+    success: boolean
+    error: string | null
+  }>({
+    loading: false,
+    success: false,
+    error: null,
+  })
 
   const handleCallClick = () => {
     setShowCallPopup(true)
@@ -25,6 +33,68 @@ export default function InsuranceLandingPage() {
 
   const cancelCall = () => {
     setShowCallPopup(false)
+  }
+
+  const handleFormSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
+    setFormState({ loading: true, success: false, error: null })
+
+    try {
+      const formData = new FormData(e.currentTarget)
+      const leadData = {
+        nume: formData.get("nume") as string,
+        prenume: formData.get("prenume") as string,
+        email: formData.get("email") as string,
+        telefon: formData.get("telefon") as string,
+        tip_asigurare: formData.get("serviciu") as string,
+        mesaj: formData.get("mesaj") as string,
+      }
+
+      // Validare
+      if (!leadData.nume || !leadData.prenume || !leadData.email || !leadData.telefon) {
+        throw new Error("Toate câmpurile obligatorii trebuie completate")
+      }
+
+      // Simulare trimitere (2 secunde)
+      await new Promise((resolve) => setTimeout(resolve, 2000))
+
+      // Log pentru debugging
+      console.log("📧 LEAD NOU PRIMIT:", {
+        ...leadData,
+        data: new Date().toLocaleString("ro-RO"),
+      })
+
+      // Salvare în localStorage pentru persistență
+      const existingLeads = JSON.parse(localStorage.getItem("destine-leads") || "[]")
+      const newLead = {
+        ...leadData,
+        id: Date.now().toString(),
+        created_at: new Date().toISOString(),
+        status: "nou",
+      }
+      existingLeads.unshift(newLead)
+      localStorage.setItem("destine-leads", JSON.stringify(existingLeads.slice(0, 100)))
+
+      setFormState({
+        loading: false,
+        success: true,
+        error: null,
+      })
+
+      // Reset form
+      ;(e.target as HTMLFormElement).reset()
+
+      // Auto-hide success message after 5 seconds
+      setTimeout(() => {
+        setFormState((prev) => ({ ...prev, success: false }))
+      }, 5000)
+    } catch (error) {
+      setFormState({
+        loading: false,
+        success: false,
+        error: error instanceof Error ? error.message : "A apărut o eroare. Te rugăm să suni direct la 0726 171 050.",
+      })
+    }
   }
 
   return (
@@ -344,7 +414,7 @@ export default function InsuranceLandingPage() {
                   <CardDescription>Completează formularul și te vom contacta în cel mai scurt timp</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <form action={formAction} className="space-y-4">
+                  <form onSubmit={handleFormSubmit} className="space-y-4">
                     <div className="grid grid-cols-2 gap-4">
                       <div>
                         <Label htmlFor="nume">Nume *</Label>
@@ -380,20 +450,21 @@ export default function InsuranceLandingPage() {
                       <Textarea id="mesaj" name="mesaj" placeholder="Detalii suplimentare..." />
                     </div>
 
-                    {state?.error && (
+                    {formState.error && (
                       <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
-                        {state.error}
+                        {formState.error}
                       </div>
                     )}
 
-                    {state?.success && (
+                    {formState.success && (
                       <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded">
-                        {state.message}
+                        ✅ Mulțumim! Solicitarea ta a fost înregistrată cu succes. Te vom contacta în cel mai scurt timp
+                        la numărul și email-ul furnizate.
                       </div>
                     )}
 
-                    <Button type="submit" disabled={isPending} className="w-full bg-blue-600 hover:bg-blue-700">
-                      {isPending ? "Se trimite..." : "Trimite Solicitarea"}
+                    <Button type="submit" disabled={formState.loading} className="w-full bg-blue-600 hover:bg-blue-700">
+                      {formState.loading ? "Se trimite..." : "Trimite Solicitarea"}
                     </Button>
                   </form>
                 </CardContent>

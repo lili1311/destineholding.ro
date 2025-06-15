@@ -5,7 +5,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { Phone, Mail, Eye, Download, Filter, AlertCircle } from "lucide-react"
 import { updateLeadStatus } from "@/app/actions/lead-actions"
-import { isSupabaseConfigured } from "@/lib/supabase"
 
 type Lead = {
   id: string
@@ -42,7 +41,6 @@ export function AdminDashboard({ leads, stats }: AdminDashboardProps) {
   const handleStatusChange = async (leadId: string, newStatus: string) => {
     const result = await updateLeadStatus(leadId, newStatus)
     if (result.success) {
-      // Refresh page sau update local state
       window.location.reload()
     }
   }
@@ -93,20 +91,18 @@ export function AdminDashboard({ leads, stats }: AdminDashboardProps) {
         <h1 className="text-3xl font-bold text-gray-900 mb-2">Dashboard Admin - Destine Holding</h1>
         <p className="text-gray-600">Gestionează lead-urile și monitorizează performanța site-ului</p>
 
-        {!isSupabaseConfigured && (
-          <div className="mt-4 bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <div className="flex items-start">
-              <AlertCircle className="h-5 w-5 text-blue-600 mt-0.5 mr-3" />
-              <div>
-                <h3 className="text-sm font-medium text-blue-800">Configurare Necesară</h3>
-                <p className="text-sm text-blue-700 mt-1">
-                  Pentru funcționalitate completă, configurează Supabase și Resend în variabilele de mediu. Momentan
-                  funcționează în modul demo cu salvare temporară.
-                </p>
-              </div>
+        <div className="mt-4 bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <div className="flex items-start">
+            <AlertCircle className="h-5 w-5 text-blue-600 mt-0.5 mr-3" />
+            <div>
+              <h3 className="text-sm font-medium text-blue-800">Versiune Demo</h3>
+              <p className="text-sm text-blue-700 mt-1">
+                Lead-urile se salvează temporar în memorie. Pentru salvare permanentă și email-uri automate,
+                configurează Supabase și Resend în variabilele de mediu.
+              </p>
             </div>
           </div>
-        )}
+        </div>
       </div>
 
       {/* Stats Cards */}
